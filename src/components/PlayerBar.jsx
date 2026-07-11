@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
-import useStore, { LYRICS_DB } from '../store/useStore';
+import useStore from '../store/useStore';
 import { initAudio, resumeAudioContext } from '../audio/audioEngine';
 import { songs } from '../data/songs';
 import { GoogleGenAI } from '@google/genai';
@@ -248,7 +248,6 @@ Please pick the next song that flows best! Return ONLY valid JSON like this:
         >
           🎧 Smart Shuffle
         </button>
-        <button className="player-icon-btn" onClick={() => { if (currentSong) openModal('lyrics'); }}>Lyrics</button>
         <button className="player-icon-btn" onClick={() => openModal('eq')}>EQ</button>
         <button className="player-icon-btn" onClick={() => openModal('visualizer')}>Visuals</button>
         <div className="player-volume-wrapper">

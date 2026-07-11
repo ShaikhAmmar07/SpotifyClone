@@ -9,14 +9,7 @@ const SPEED_PROFILES = {
   offline: { name: "Offline Mode", rate: 0, display: "0 KB/s" }
 };
 
-const LYRICS_DB = {
-  1: "[00:10] I stretch local files to find something new\n[00:20] Gnarls Barkley is spinning, the soul is in you\n[00:30] Does that make me crazy?\n[00:40] Does that make me crazy?\n[00:50] Probably.",
-  2: "[00:15] Gila Monster in the desert sands\n[00:25] Dani California plays across the lands\n[00:35] She's a lover, baby, she's a star\n[00:45] Strumming on her skeuomorphic guitar.",
-  3: "[00:12] We'll do it all, everything, on our own\n[00:24] We don't need anything, or anyone\n[00:36] If I lay here, if I just lay here\n[00:48] Would you lie with me and just forget the world?",
-  5: "[00:20] When I was a young boy, my father\n[00:30] Took me into the city to see a marching band\n[00:40] He said, Son, when you grow up, would you be\n[00:50] The savior of the broken, the beaten, and the damned?"
-};
-
-export { SPEED_PROFILES, LYRICS_DB };
+export { SPEED_PROFILES };
 
 const useStore = create((set, get) => ({
   // App phase

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import useStore, { SPEED_PROFILES, LYRICS_DB } from '../../store/useStore';
+import useStore, { SPEED_PROFILES } from '../../store/useStore';
 import { EQ_FREQUENCIES, EQ_PRESETS, setEQGain, applyPreset, getEQGains } from '../../audio/audioEngine';
 import { startVisualizer, stopVisualizer, setVisualizerMode } from '../../audio/visualizer';
 import DJChatWindow from '../DJChatWindow';
@@ -325,23 +325,6 @@ export function PropertiesModal() {
         <div className="props-row"><span className="label">Bitrate:</span><span className="value">{track.bitrate}</span></div>
         <div className="props-row"><span className="label">Size:</span><span className="value">{track.size}</span></div>
         <div className="props-actions"><button className="xp-button primary" onClick={() => useStore.getState().closeModal('properties')}>Close</button></div>
-      </div>
-    </Modal>
-  );
-}
-
-export function LyricsModal() {
-  const { currentSong } = useStore();
-  if (!currentSong) return null;
-  const lyrics = LYRICS_DB[currentSong.id] || "Lyrics not available for this track.";
-
-  return (
-    <Modal id="lyrics" title="Lyric Viewer" className="lyrics-window">
-      <div className="lyrics-body">
-        <h3>{currentSong.title}</h3>
-        <p>{currentSong.artist}</p>
-        <hr />
-        <div className="lyrics-text-container">{lyrics.replace(/\n/g, '\n')}</div>
       </div>
     </Modal>
   );

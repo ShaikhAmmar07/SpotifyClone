@@ -7,7 +7,7 @@ import LibraryView from './views/LibraryView';
 import DownloadsView from './views/DownloadsView';
 import PlaylistsView from './views/PlaylistsView';
 import PlayerBar from './PlayerBar';
-import { EQModal, VisualizerModal, CDBurnerModal, DeviceSyncModal, PreferencesModal, PropertiesModal, LyricsModal, AboutModal, ConfirmModal } from './modals/Modals';
+import { EQModal, VisualizerModal, CDBurnerModal, DeviceSyncModal, PreferencesModal, PropertiesModal, AboutModal, ConfirmModal } from './modals/Modals';
 import DJChatWindow from './DJChatWindow';
 import MoodMixerDialog from './MoodMixerDialog';
 import useDownloadTick from '../hooks/useDownloadTick';
@@ -269,7 +269,6 @@ export default function MainLayout() {
       <DeviceSyncModal />
       <PreferencesModal />
       <PropertiesModal />
-      <LyricsModal />
       <AboutModal />
       <ConfirmModal />
       <DJChatWindow />
