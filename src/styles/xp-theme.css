@@ -67,7 +67,7 @@ body { font-family: var(--xp-font); font-size: 11px; color: #000; background: va
 /* ===== MENU BAR ===== */
 .xp-menubar { background: var(--xp-blue-toolbar); border-bottom: 1px solid #aca899; display: flex; align-items: center; padding: 0 4px; flex-shrink: 0; position: relative; }
 .xp-menu-item { position: relative; padding: 4px 8px; cursor: pointer; }
-.xp-menu-item:hover { background: var(--xp-selection-bg); color: white; }
+.xp-menu-item:hover { background: var(--xp-selection-bg); }
 .xp-dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #848484; box-shadow: 2px 2px 4px rgba(0,0,0,0.2); min-width: 200px; z-index: 500; }
 .xp-menu-item:hover .xp-dropdown-menu { display: block; }
 .xp-dropdown-item { padding: 4px 20px; cursor: pointer; white-space: nowrap; }
