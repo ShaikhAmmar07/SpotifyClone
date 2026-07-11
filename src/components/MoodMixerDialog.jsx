@@ -11,6 +11,40 @@ const MoodMixerDialog = () => {
   const [generatedSongs, setGeneratedSongs] = useState([]);
   const [loadingText, setLoadingText] = useState('Generating your perfect playlist...');
 
+  const localLibraryCatalog = songs.map((song) => {
+    return `${song.id}. ${song.title} by ${song.artist} | ${song.genre} | ${song.mood} | ${song.year} | ${song.duration}`;
+  }).join('\n');
+
+  const sanitizePlaylistSongs = (candidateSongs) => {
+    return candidateSongs
+      .map((song) => {
+        if (!song || song.id == null) return null;
+        const dbSong = songs.find((librarySong) => librarySong.id === song.id);
+        return dbSong ? { ...dbSong, reason: song.reason || 'Perfect for your vibe!' } : null;
+      })
+      .filter(Boolean);
+  };
+
+  const getLocalFallbackSongIds = (moodDesc) => {
+    const lowerMood = moodDesc.toLowerCase();
+    const preferred = songs.filter((song) => {
+      return (
+        lowerMood.includes(song.mood) ||
+        lowerMood.includes(song.genre.toLowerCase()) ||
+        (lowerMood.includes('2006') && song.year === 2006)
+      );
+    });
+
+    if (preferred.length > 0) {
+      return preferred.map((song) => song.id);
+    }
+
+    return songs
+      .filter((song) => song.year === 2006)
+      .slice(0, 5)
+      .map((song) => song.id);
+  };
+
   const mockFallbackPlaylists = {
     sad: [1, 3, 7, 5],
     happy: [2, 4, 8, 10],
@@ -21,25 +55,20 @@ const MoodMixerDialog = () => {
 
   const getFallbackPlaylist = (moodDesc) => {
     const lowerMood = moodDesc.toLowerCase();
-    let selectedIds = [];
-    if (lowerMood.includes('sad') || lowerMood.includes('rainy')) {
-      selectedIds = mockFallbackPlaylists.sad;
-    } else if (lowerMood.includes('happy') || lowerMood.includes('dance')) {
-      selectedIds = mockFallbackPlaylists.happy;
-    } else if (lowerMood.includes('party') || lowerMood.includes('rock')) {
-      selectedIds = mockFallbackPlaylists.party;
-    } else if (lowerMood.includes('study') || lowerMood.includes('chill')) {
-      selectedIds = mockFallbackPlaylists.study;
-    } else {
-      selectedIds = mockFallbackPlaylists.workout;
-    }
-    return selectedIds.map(id => {
-      const song = songs.find(s => s.id === id);
-      return {
-        ...song,
-        reason: 'Perfect for your vibe!'
-      };
-    });
+    const selectedIds = lowerMood.includes('sad') || lowerMood.includes('rainy')
+      ? mockFallbackPlaylists.sad
+      : lowerMood.includes('happy') || lowerMood.includes('dance')
+        ? mockFallbackPlaylists.happy
+        : lowerMood.includes('party') || lowerMood.includes('rock')
+          ? mockFallbackPlaylists.party
+          : lowerMood.includes('study') || lowerMood.includes('chill')
+            ? mockFallbackPlaylists.study
+            : mockFallbackPlaylists.workout;
+
+    return sanitizePlaylistSongs(selectedIds.map((id) => songs.find((song) => song.id === id)).filter(Boolean).map((song) => ({
+      ...song,
+      reason: 'Perfect for your vibe!'
+    })));
   };
 
   const generatePlaylist = async () => {
@@ -68,8 +97,10 @@ const MoodMixerDialog = () => {
           
           const prompt = `
 Given a user's mood: "${mood}"
-And available songs (id, title, artist, album, year):
-${songs.map(s => `${s.id}: "${s.title}" by ${s.artist} from ${s.album} (${s.year})`).join('\n')}
+Only use songs from this local library. Do not invent any songs.
+
+Available songs (id, title, artist, album, genre, mood, year, duration):
+${localLibraryCatalog}
 
 Please select 10 songs that match the mood. Return ONLY valid JSON with NO extra text. The JSON format should be:
 {
@@ -99,7 +130,7 @@ Please select 10 songs that match the mood. Return ONLY valid JSON with NO extra
             jsonStr = jsonStr.slice(jsonStart, jsonEnd + 1);
           }
           const parsed = JSON.parse(jsonStr);
-          selectedSongs = parsed.songs;
+          selectedSongs = sanitizePlaylistSongs(parsed.songs || []);
         } catch (e) {
           console.error('AI error', e);
           selectedSongs = getFallbackPlaylist(mood);
@@ -109,10 +140,15 @@ Please select 10 songs that match the mood. Return ONLY valid JSON with NO extra
       }
 
       // Ensure all songs are from our database
-      selectedSongs = selectedSongs.map(s => {
-        const dbSong = songs.find(song => song.id === s.id);
-        return dbSong ? { ...dbSong, reason: s.reason || 'Perfect for your vibe!' } : null;
-      }).filter(Boolean);
+      selectedSongs = sanitizePlaylistSongs(selectedSongs);
+
+      if (selectedSongs.length === 0) {
+        const fallbackIds = getLocalFallbackSongIds(mood);
+        selectedSongs = sanitizePlaylistSongs(fallbackIds.map((id) => songs.find((song) => song.id === id)).filter(Boolean).map((song) => ({
+          ...song,
+          reason: 'Perfect for your vibe!'
+        })));
+      }
 
       setGeneratedSongs(selectedSongs);
       clearInterval(interval);
