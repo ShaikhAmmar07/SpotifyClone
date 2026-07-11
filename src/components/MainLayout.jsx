@@ -8,6 +8,8 @@ import DownloadsView from './views/DownloadsView';
 import PlaylistsView from './views/PlaylistsView';
 import PlayerBar from './PlayerBar';
 import { EQModal, VisualizerModal, CDBurnerModal, DeviceSyncModal, PreferencesModal, PropertiesModal, LyricsModal, AboutModal, ConfirmModal } from './modals/Modals';
+import DJChatWindow from './DJChatWindow';
+import MoodMixerDialog from './MoodMixerDialog';
 import useDownloadTick from '../hooks/useDownloadTick';
 
 export default function MainLayout() {
@@ -139,9 +141,12 @@ export default function MainLayout() {
             <div className="xp-toolbar-divider"></div>
             <button className={`xp-toolbar-btn ${currentView === 'home' ? 'active' : ''}`} onClick={() => navigateTo('home')}><span className="icon">&#127968;</span> Home</button>
             <button className={`xp-toolbar-btn ${currentView === 'library' ? 'active' : ''}`} onClick={() => navigateTo('library')}><span className="icon">&#128193;</span> Library</button>
-            <button className={`xp-toolbar-btn ${['store', 'albumDetails'].includes(currentView) ? 'active' : ''}`} onClick={() => navigateTo('store')} disabled={isOffline}><span className="icon">&#128184;</span> Store</button>
-            <button className={`xp-toolbar-btn ${currentView === 'downloads' ? 'active' : ''}`} onClick={() => navigateTo('downloads')}><span className="icon">&#128190;</span> Downloads {downloads.length > 0 && <span className="badge">{downloads.length}</span>}</button>
-            <button className="xp-toolbar-btn" onClick={() => openModal('deviceSync')}><span className="icon">&#8635;</span> Sync</button>
+            <button className={`xp-toolbar-btn ${['store', 'albumDetails'].includes(currentView) ? 'active' : ''}`} onClick={() => navigateTo('store')} disabled={isOffline}><span className="icon">💸</span> Store</button>
+                <button className={`xp-toolbar-btn ${currentView === 'downloads' ? 'active' : ''}`} onClick={() => navigateTo('downloads')}><span className="icon">📥</span> Downloads {downloads.length > 0 && <span className="badge">{downloads.length}</span>}</button>
+                <button className="xp-toolbar-btn" onClick={() => openModal('deviceSync')}><span className="icon">🔄</span> Sync</button>
+                <div className="xp-toolbar-divider"></div>
+                <button className="xp-toolbar-btn" onClick={() => openModal('djChat')}><span className="icon">🎧</span> Ask the DJ</button>
+                <button className="xp-toolbar-btn" onClick={() => openModal('moodMixer')}><span className="icon">🎛️</span> Mood Mixer</button>
           </div>
           <div className="xp-toolbar-search">
             <input type="text" placeholder="Search Store or Library..." value={searchText} onChange={e => setSearchText(e.target.value)} onKeyPress={e => { if (e.key === 'Enter') handleSearch(); }} />
@@ -267,6 +272,8 @@ export default function MainLayout() {
       <LyricsModal />
       <AboutModal />
       <ConfirmModal />
+      <DJChatWindow />
+      <MoodMixerDialog />
     </>
   );
 }

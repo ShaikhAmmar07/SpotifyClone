@@ -59,6 +59,13 @@ const useStore = create((set, get) => ({
   
   // Modals
   openModals: {},
+
+  // DJ Chat
+  djChatHistory: [],
+
+  // Smart Shuffle
+  smartShuffleActive: false,
+  lastPlayed: [],
   
   // Confirm dialog
   confirmDialog: null,
@@ -195,6 +202,17 @@ const useStore = create((set, get) => ({
   // Search
   setSearchQuery: (q) => set({ searchQuery: q }),
   setSelectedAlbum: (name) => set({ selectedAlbumName: name }),
+
+  // DJ Chat
+  addDjChatMessage: (message) => set((state) => ({ djChatHistory: [...state.djChatHistory, message] })),
+  clearDjChatHistory: () => set({ djChatHistory: [] }),
+
+  // Smart Shuffle
+  toggleSmartShuffle: () => set((state) => ({ smartShuffleActive: !state.smartShuffleActive })),
+  addToLastPlayed: (song) => set((state) => {
+    const newLastPlayed = [song, ...state.lastPlayed.filter(s => s.id !== song.id)].slice(0, 20);
+    return { lastPlayed: newLastPlayed };
+  }),
 }));
 
 export default useStore;

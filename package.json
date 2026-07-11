@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "^2.11.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-draggable": "^4.7.0",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

@@ -1,15 +1,80 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import useStore, { LYRICS_DB } from '../store/useStore';
 import { initAudio, resumeAudioContext } from '../audio/audioEngine';
+import { songs } from '../data/songs';
+import { GoogleGenAI } from '@google/genai';
 
 export default function PlayerBar({ audioRef }) {
-  const { currentSong, isPlaying, library, setIsPlaying, setCurrentSong, incrementPlayCount, rateSong, openModal } = useStore();
+  const { 
+    currentSong, isPlaying, library, setIsPlaying, setCurrentSong, incrementPlayCount, rateSong, openModal,
+    smartShuffleActive, lastPlayed, addToLastPlayed, toggleSmartShuffle
+  } = useStore();
   const timeElapsedRef = useRef(null);
   const timeTotalRef = useRef(null);
   const timelineRef = useRef(null);
   const volumeRef = useRef(null);
   const playIconRef = useRef(null);
   const hasIncrementedRef = useRef(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [recommendationText, setRecommendationText] = useState('');
+
+  useEffect(() => {
+    if (currentSong) {
+      addToLastPlayed(currentSong);
+    }
+  }, [currentSong?.id, addToLastPlayed]);
+
+  const getAIRecommendation = useCallback(async () => {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey || !currentSong) {
+      // Fallback to random
+      const available = songs.filter(s => !lastPlayed.some(p => p.id === s.id));
+      const fallback = available.length > 0 
+        ? available[Math.floor(Math.random() * available.length)] 
+        : songs[Math.floor(Math.random() * songs.length)];
+      return { nextSong: fallback, reason: "Random bop for you!" };
+    }
+
+    try {
+      const client = new GoogleGenAI({ apiKey });
+      
+      const prompt = `
+Current song: ${currentSong.title} by ${currentSong.artist}
+Last played: ${lastPlayed.map(s => s.title + " by " + s.artist).join(", ")}
+All available songs (id, title, artist, album):
+${songs.map(s => `${s.id}: ${s.title} by ${s.artist} from ${s.album}`).join("\n")}
+
+Please pick the next song that flows best! Return ONLY valid JSON like this:
+{"nextSongId": song_id, "reason": "one sentence why this fits"}
+`;
+
+      const result = await client.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents: [{ role: 'user', parts: [{ text: prompt }] }]
+      });
+      
+      const responseText = result.text ?? '';
+      
+      let jsonStr = responseText;
+      const jsonStart = jsonStr.indexOf('{');
+      const jsonEnd = jsonStr.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        jsonStr = jsonStr.slice(jsonStart, jsonEnd + 1);
+      }
+      const parsed = JSON.parse(jsonStr);
+      
+      const nextSong = songs.find(s => s.id === parsed.nextSongId) || songs[0];
+      return { nextSong, reason: parsed.reason };
+    } catch (e) {
+      console.error("AI error", e);
+      // Fallback
+      const available = songs.filter(s => !lastPlayed.some(p => p.id === s.id));
+      const fallback = available.length > 0 
+        ? available[Math.floor(Math.random() * available.length)] 
+        : songs[Math.floor(Math.random() * songs.length)];
+      return { nextSong: fallback, reason: "Random bop for you!" };
+    }
+  }, [currentSong, lastPlayed]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -50,15 +115,27 @@ export default function PlayerBar({ audioRef }) {
     const onMeta = () => {
       if (timeTotalRef.current) timeTotalRef.current.textContent = formatTime(audio.duration);
     };
-    const onEnded = () => {
+    const onEnded = async () => {
       const state = useStore.getState();
-      const lib = state.library;
-      const curr = state.currentSong;
-      if (curr && lib.length > 0) {
-        const idx = lib.findIndex(s => s.id === curr.id);
-        const next = lib[(idx + 1) % lib.length];
-        state.setCurrentSong(next);
-        state.setIsPlaying(true);
+      if (state.smartShuffleActive) {
+        setAiLoading(true);
+        setRecommendationText('🎧 DJ is mixing...');
+        // Fake 2-3s delay
+        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1000));
+        const rec = await getAIRecommendation();
+        setCurrentSong(rec.nextSong);
+        setRecommendationText(`🎧 DJ recommends: ${rec.nextSong.title} - ${rec.reason}`);
+        setIsPlaying(true);
+        setAiLoading(false);
+      } else {
+        const lib = state.library;
+        const curr = state.currentSong;
+        if (curr && lib.length > 0) {
+          const idx = lib.findIndex(s => s.id === curr.id);
+          const next = lib[(idx + 1) % lib.length];
+          state.setCurrentSong(next);
+          state.setIsPlaying(true);
+        }
       }
     };
 
@@ -86,15 +163,30 @@ export default function PlayerBar({ audioRef }) {
     setIsPlaying(false);
   }, [audioRef]);
 
-  const prevNext = useCallback((dir) => {
+  const prevNext = useCallback(async (dir) => {
     if (library.length === 0 || !currentSong) return;
-    const idx = library.findIndex(s => s.id === currentSong.id);
-    let next = idx + dir;
-    if (next >= library.length) next = 0;
-    if (next < 0) next = library.length - 1;
-    setCurrentSong(library[next]);
-    setIsPlaying(true);
-  }, [library, currentSong]);
+
+    if (dir === 1 && smartShuffleActive) {
+      // Next with AI
+      setAiLoading(true);
+      setRecommendationText('🎧 DJ is mixing...');
+      // Fake 2-3s delay
+      await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1000));
+      const rec = await getAIRecommendation();
+      setCurrentSong(rec.nextSong);
+      setRecommendationText(`🎧 DJ recommends: ${rec.nextSong.title} - ${rec.reason}`);
+      setIsPlaying(true);
+      setAiLoading(false);
+    } else {
+      // Normal prev/next
+      const idx = library.findIndex(s => s.id === currentSong.id);
+      let next = idx + dir;
+      if (next >= library.length) next = 0;
+      if (next < 0) next = library.length - 1;
+      setCurrentSong(library[next]);
+      setIsPlaying(true);
+    }
+  }, [library, currentSong, smartShuffleActive, getAIRecommendation]);
 
   const handleTimeline = (e) => {
     const audio = audioRef.current;
@@ -128,6 +220,8 @@ export default function PlayerBar({ audioRef }) {
             <span>{currentSong?.bitrate || '192 kbps'}</span>
             <span className="divider">|</span>
             <span className="rating-stars" onClick={handleRatingClick}>{stars}</span>
+            {recommendationText && <span className="divider">|</span>}
+            {recommendationText && <span style={{ fontSize: '10px', color: '#0066cc' }}>{recommendationText}</span>}
           </div>
         </div>
       </div>
@@ -136,7 +230,9 @@ export default function PlayerBar({ audioRef }) {
           <button className="player-btn" onClick={() => prevNext(-1)} title="Previous"><span>&#9664;&#9664;</span></button>
           <button className="player-btn primary" onClick={togglePlayback} title="Play/Pause"><span ref={playIconRef}>{isPlaying ? '❚❚' : '▶'}</span></button>
           <button className="player-btn" onClick={stopTrack} title="Stop"><span>&#9632;</span></button>
-          <button className="player-btn" onClick={() => prevNext(1)} title="Next"><span>&#9654;&#9654;</span></button>
+          <button className="player-btn" onClick={() => prevNext(1)} title="Next" disabled={aiLoading}>
+            {aiLoading ? '...' : '▶▶'}
+          </button>
         </div>
         <div className="player-timeline-wrapper">
           <span className="time-elapsed" ref={timeElapsedRef}>0:00</span>
@@ -145,6 +241,13 @@ export default function PlayerBar({ audioRef }) {
         </div>
       </div>
       <div className="player-utils-panel">
+        <button 
+          className={`player-icon-btn ${smartShuffleActive ? 'smart-shuffle-active' : ''}`} 
+          onClick={toggleSmartShuffle}
+          title="Smart Shuffle"
+        >
+          🎧 Smart Shuffle
+        </button>
         <button className="player-icon-btn" onClick={() => { if (currentSong) openModal('lyrics'); }}>Lyrics</button>
         <button className="player-icon-btn" onClick={() => openModal('eq')}>EQ</button>
         <button className="player-icon-btn" onClick={() => openModal('visualizer')}>Visuals</button>
@@ -153,6 +256,18 @@ export default function PlayerBar({ audioRef }) {
           <div className="xp-slider-container"><input type="range" ref={volumeRef} defaultValue="70" min="0" max="100" onInput={handleVolume} /></div>
         </div>
       </div>
+      <style jsx>{`
+        .smart-shuffle-active {
+          background: linear-gradient(135deg, #1db954, #1ed760);
+          color: white;
+          font-weight: bold;
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { box-shadow: 0 0 5px #1db954; }
+          50% { box-shadow: 0 0 15px #1db954, 0 0 25px #1ed760; }
+        }
+      `}</style>
     </div>
   );
 }

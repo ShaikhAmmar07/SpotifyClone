@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import useStore, { SPEED_PROFILES, LYRICS_DB } from '../../store/useStore';
 import { EQ_FREQUENCIES, EQ_PRESETS, setEQGain, applyPreset, getEQGains } from '../../audio/audioEngine';
 import { startVisualizer, stopVisualizer, setVisualizerMode } from '../../audio/visualizer';
+import DJChatWindow from '../DJChatWindow';
 
 const EQ_LABELS = ['60Hz', '170Hz', '310Hz', '600Hz', '1K', '3K', '6K', '12K', '14K', '16K'];
 
