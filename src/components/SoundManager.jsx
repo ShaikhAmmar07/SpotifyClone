@@ -17,26 +17,6 @@ export default function SoundManager({ children }) {
   };
 
   useEffect(() => {
-    let hasPlayed = false;
-    const playStartup = () => {
-      if (hasPlayed) return;
-      console.log('Attempting to play Start sound...');
-      playSound('Start.mp3');
-      hasPlayed = true;
-      window.removeEventListener('click', playStartup);
-      window.removeEventListener('keydown', playStartup);
-    };
-    
-    window.addEventListener('click', playStartup);
-    window.addEventListener('keydown', playStartup);
-    
-    return () => {
-      window.removeEventListener('click', playStartup);
-      window.removeEventListener('keydown', playStartup);
-    };
-  }, []);
-
-  useEffect(() => {
     const handleClick = (e) => {
       if (isMuted) return;
       

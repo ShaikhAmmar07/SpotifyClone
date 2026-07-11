@@ -1,6 +1,19 @@
 import { useState } from 'react';
 import useStore from '../store/useStore';
 
+const playStartSound = () => {
+  try {
+    const startAudio = new Audio('/sounds/Start.mp3');
+    startAudio.volume = 0.5;
+    const isMuted = localStorage.getItem('xp_sounds_muted') === 'true';
+    if (!isMuted) {
+      startAudio.play().catch(e => console.log('Start sound play failed:', e));
+    }
+  } catch (error) {
+    console.error('Error playing start sound:', error);
+  }
+};
+
 export default function LoginScreen() {
   const login = useStore(s => s.login);
   const [email, setEmail] = useState('rivalry@retrospotify.com');
@@ -9,10 +22,24 @@ export default function LoginScreen() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    playStartSound();
+    setTimeout(() => {
+      if (window.playXPSound) {
+        window.playXPSound('Start.mp3');
+      }
+    }, 500);
     login(connection, email);
   };
 
-  const handleOffline = () => login('offline', email);
+  const handleOffline = () => {
+    playStartSound();
+    setTimeout(() => {
+      if (window.playXPSound) {
+        window.playXPSound('Start.mp3');
+      }
+    }, 500);
+    login('offline', email);
+  };
 
   return (
     <div className="login-overlay">
