@@ -26,6 +26,7 @@ export default function PlayerBar({ audioRef }) {
 
   const getAIRecommendation = useCallback(async () => {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    console.log('API Key loaded:', !!apiKey);
     if (!apiKey || !currentSong) {
       // Fallback to random
       const available = songs.filter(s => !lastPlayed.some(p => p.id === s.id));
@@ -47,6 +48,8 @@ ${songs.map(s => `${s.id}: ${s.title} by ${s.artist} from ${s.album}`).join("\n"
 Please pick the next song that flows best! Return ONLY valid JSON like this:
 {"nextSongId": song_id, "reason": "one sentence why this fits"}
 `;
+
+      console.log('Sending to Gemini:', prompt);
 
       const result = await client.models.generateContent({
         model: 'gemini-3.5-flash',

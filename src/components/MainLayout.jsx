@@ -10,6 +10,7 @@ import PlayerBar from './PlayerBar';
 import { EQModal, VisualizerModal, CDBurnerModal, DeviceSyncModal, PreferencesModal, PropertiesModal, AboutModal, ConfirmModal } from './modals/Modals';
 import DJChatWindow from './DJChatWindow';
 import MoodMixerDialog from './MoodMixerDialog';
+import GuestbookModal from './GuestbookModal';
 import useDownloadTick from '../hooks/useDownloadTick';
 
 export default function MainLayout() {
@@ -147,6 +148,7 @@ export default function MainLayout() {
                 <div className="xp-toolbar-divider"></div>
                 <button className="xp-toolbar-btn" onClick={() => openModal('djChat')}><span className="icon">🎧</span> Ask the DJ</button>
                 <button className="xp-toolbar-btn" onClick={() => openModal('moodMixer')}><span className="icon">🎛️</span> Mood Mixer</button>
+                <button className="xp-toolbar-btn" onClick={() => openModal('guestbook')}><span className="icon">📖</span> Guestbook</button>
           </div>
           <div className="xp-toolbar-search">
             <input type="text" placeholder="Search Store or Library..." value={searchText} onChange={e => setSearchText(e.target.value)} onKeyPress={e => { if (e.key === 'Enter') handleSearch(); }} />
@@ -273,6 +275,7 @@ export default function MainLayout() {
       <ConfirmModal />
       <DJChatWindow />
       <MoodMixerDialog />
+      <GuestbookModal />
     </>
   );
 }
