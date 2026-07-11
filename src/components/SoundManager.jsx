@@ -17,8 +17,12 @@ export default function SoundManager({ children }) {
   };
 
   useEffect(() => {
+    let hasPlayed = false;
     const playStartup = () => {
+      if (hasPlayed) return;
+      console.log('Attempting to play Start sound...');
       playSound('Start.mp3');
+      hasPlayed = true;
       window.removeEventListener('click', playStartup);
       window.removeEventListener('keydown', playStartup);
     };
@@ -33,17 +37,28 @@ export default function SoundManager({ children }) {
   }, []);
 
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      playSound('Shutdown.mp3');
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, []);
-
-  useEffect(() => {
     const handleClick = (e) => {
-      if (e.target.closest('button, a, [role="button"], input[type="submit"]')) {
+      if (isMuted) return;
+      
+      const target = e.target;
+      const isInteractive = 
+        target.closest('button') || 
+        target.closest('a') || 
+        target.closest('tr') || 
+        target.closest('.clickable') || 
+        target.closest('.xp-window') ||
+        target.closest('.xp-titlebar') ||
+        target.closest('.sidebar-item') ||
+        target.closest('.xp-menu-item') ||
+        target.closest('.xp-dropdown-item') ||
+        target.closest('.xp-toolbar-btn') ||
+        target.closest('.context-item') ||
+        target.closest('.xp-tab-btn') ||
+        target.tagName === 'INPUT' || 
+        target.tagName === 'SELECT' ||
+        target.tagName === 'OPTION';
+
+      if (isInteractive) {
         playSound('mouse-click.mp3');
       }
     };

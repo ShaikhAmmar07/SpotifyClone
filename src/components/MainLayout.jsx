@@ -16,6 +16,7 @@ import useDownloadTick from '../hooks/useDownloadTick';
 export default function MainLayout() {
   const audioRef = useRef(null);
   useDownloadTick();
+  const [showShutdown, setShowShutdown] = useState(false);
 
   // Close context menu on any click
   useEffect(() => {
@@ -61,6 +62,11 @@ export default function MainLayout() {
     if (action === 'delete' && track) showConfirm("Delete", `Delete "${track.title}"?`, () => useStore.getState().removeFromLibrary(track.id));
   };
 
+  const handleShutdown = () => {
+    window.playXPSound?.('Shutdown.mp3');
+    setShowShutdown(true);
+  };
+
   const renderView = () => {
     switch (currentView) {
       case 'home': return <HomeView />;
@@ -98,6 +104,8 @@ export default function MainLayout() {
               <div className="xp-dropdown-item" onClick={handleNewPlaylist}>New Playlist (Ctrl+N)</div>
               <hr />
               <div className="xp-dropdown-item" onClick={() => { window.playErrorSound?.(); showConfirm("Exit", "Close Spotify?", () => {}); }}>Exit</div>
+              <hr />
+              <div className="xp-dropdown-item" onClick={handleShutdown} style={{ fontWeight: 'bold', color: '#003399' }}>Shut Down...</div>
             </div>
           </div>
           <div className="xp-menu-item"><span>Edit</span>
@@ -264,6 +272,39 @@ export default function MainLayout() {
         <div className="context-item delete" onClick={() => handleContextAction('delete')}>Delete Track</div>
       </div>
 
+      {/* Shutdown Overlay */}
+      {showShutdown && (
+        <div className="xp-shutdown-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: '#000',
+          color: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          fontFamily: 'Tahoma, sans-serif',
+          fontSize: '18px'
+        }}>
+          <div style={{ textAlign: 'center', maxWidth: '400px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠</div>
+            <h2 style={{ margin: '0 0 20px', fontWeight: 'normal' }}>It's now safe to turn off your computer.</h2>
+            <p style={{ margin: '0 0 30px', color: '#aaa' }}>Spotify 2006 has been shut down.</p>
+            <button
+              onClick={() => window.close()}
+              className="xp-button primary"
+              style={{ padding: '10px 30px', fontSize: '14px' }}
+            >
+              Close Window
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* All Modals */}
       <EQModal />
       <VisualizerModal />
@@ -276,6 +317,50 @@ export default function MainLayout() {
       <DJChatWindow />
       <MoodMixerDialog />
       <GuestbookModal />
+
+      {/* Shutdown Overlay */}
+      {showShutdown && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: '#000',
+          color: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          fontFamily: '"Courier New", monospace',
+          fontSize: '20px'
+        }}>
+          <div style={{ textAlign: 'center', maxWidth: '600px', padding: '40px' }}>
+            <h1 style={{ fontSize: '28px', marginBottom: '30px', fontWeight: 'normal' }}>
+              It's now safe to turn off your computer.
+            </h1>
+            <p style={{ fontSize: '16px', marginBottom: '40px', color: '#aaa' }}>
+              Spotify 2006 has shut down successfully.<br/>
+              You may close this browser tab.
+            </p>
+            <button
+              onClick={() => window.close()}
+              style={{
+                padding: '12px 32px',
+                fontSize: '14px',
+                fontFamily: 'Tahoma, sans-serif',
+                background: '#ECE9D8',
+                border: '2px outset #fff',
+                color: '#000',
+                cursor: 'pointer'
+              }}
+            >
+              Close Tab
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
