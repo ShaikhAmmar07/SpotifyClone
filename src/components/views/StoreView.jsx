@@ -45,7 +45,7 @@ export default function StoreView() {
               <div className="store-album-price">{isOwned ? "Purchased" : album.price}</div>
               <div className="store-album-actions">
                 <button className="xp-button small" onClick={() => { setSelectedAlbum(album.title); navigateTo('albumDetails'); }}>Details</button>
-                <button className="xp-button small primary" disabled={isOwned} onClick={() => handleBuyAlbum(album)}>Buy</button>
+                <button className="xp-button small primary" onClick={(e) => { if (isOwned) { window.playErrorSound?.(); } else { handleBuyAlbum(album); } }} disabled={isOwned}>Buy</button>
               </div>
             </div>
           );

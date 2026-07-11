@@ -97,7 +97,7 @@ export default function MainLayout() {
               <div className="xp-dropdown-item" onClick={() => showConfirm("Import", "Scanning directory...", () => { const s = { id: 100+library.length, file:`/songs/8.mp3`, title:"Imported Track", artist:"Various", album:"Imported Hits", year:2006, duration:"3:38", size:"4.5 MB", bitrate:"128 kbps", genre:"Various", rating:3, playCount:1, coverColor:"#9e9e9e" }; useStore.getState().addToLibrary(s); })}>Add Files to Library...</div>
               <div className="xp-dropdown-item" onClick={handleNewPlaylist}>New Playlist (Ctrl+N)</div>
               <hr />
-              <div className="xp-dropdown-item" onClick={() => showConfirm("Exit", "Close Spotify?", () => {})}>Exit</div>
+              <div className="xp-dropdown-item" onClick={() => { window.playErrorSound?.(); showConfirm("Exit", "Close Spotify?", () => {}); }}>Exit</div>
             </div>
           </div>
           <div className="xp-menu-item"><span>Edit</span>
@@ -138,11 +138,11 @@ export default function MainLayout() {
         {/* Toolbar */}
         <div className="xp-toolbar">
           <div className="xp-toolbar-buttons">
-            <button className="xp-toolbar-btn" onClick={goBack} disabled={historyIndex <= 0}><span className="icon">&larr;</span> Back</button>
+            <button className="xp-toolbar-btn" onClick={(e) => { if (historyIndex <= 0) { window.playErrorSound?.(); } else { goBack(); } }} disabled={historyIndex <= 0}><span className="icon">&larr;</span> Back</button>
             <div className="xp-toolbar-divider"></div>
             <button className={`xp-toolbar-btn ${currentView === 'home' ? 'active' : ''}`} onClick={() => navigateTo('home')}><span className="icon">&#127968;</span> Home</button>
             <button className={`xp-toolbar-btn ${currentView === 'library' ? 'active' : ''}`} onClick={() => navigateTo('library')}><span className="icon">&#128193;</span> Library</button>
-            <button className={`xp-toolbar-btn ${['store', 'albumDetails'].includes(currentView) ? 'active' : ''}`} onClick={() => navigateTo('store')} disabled={isOffline}><span className="icon">💸</span> Store</button>
+            <button className={`xp-toolbar-btn ${['store', 'albumDetails'].includes(currentView) ? 'active' : ''}`} onClick={(e) => { if (isOffline) { window.playErrorSound?.(); } else { navigateTo('store'); } }} disabled={isOffline}><span className="icon">💸</span> Store</button>
                 <button className={`xp-toolbar-btn ${currentView === 'downloads' ? 'active' : ''}`} onClick={() => navigateTo('downloads')}><span className="icon">📥</span> Downloads {downloads.length > 0 && <span className="badge">{downloads.length}</span>}</button>
                 <button className="xp-toolbar-btn" onClick={() => openModal('deviceSync')}><span className="icon">🔄</span> Sync</button>
                 <div className="xp-toolbar-divider"></div>

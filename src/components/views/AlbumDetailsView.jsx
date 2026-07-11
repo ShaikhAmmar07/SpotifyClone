@@ -42,7 +42,7 @@ export default function AlbumDetailsView() {
           <p>Release Year: {first.year} | Genre: {first.genre}</p>
           <p>Price: <strong>{isOwned ? "Purchased" : "$0.99"}</strong> | Total Size: {albumSongs.reduce((a, s) => a + parseFloat(s.size), 0).toFixed(1)} MB</p>
           <div className="album-details-actions">
-            <button className="xp-button primary" disabled={isOwned} onClick={handleBuyAlbum}>Buy Album</button>
+            <button className="xp-button primary" onClick={(e) => { if (isOwned) { window.playErrorSound?.(); } else { handleBuyAlbum(); } }} disabled={isOwned}>Buy Album</button>
             <p className="details-wallet-info">Your wallet: ${walletBalance.toFixed(2)}</p>
           </div>
         </div>
@@ -63,7 +63,7 @@ export default function AlbumDetailsView() {
                   <td>{song.bitrate}</td>
                   <td style={{textAlign:'center'}}>
                     <button className="xp-button small" onClick={() => handlePreview(song)}>Preview</button>
-                    <button className="xp-button small primary" disabled={owned} onClick={() => handleBuyTrack(song)}>{owned ? "Owned" : "Buy ($0.99)"}</button>
+                    <button className="xp-button small primary" onClick={(e) => { if (owned) { window.playErrorSound?.(); } else { handleBuyTrack(song); } }} disabled={owned}>{owned ? "Owned" : "Buy ($0.99)"}</button>
                   </td>
                 </tr>
               );

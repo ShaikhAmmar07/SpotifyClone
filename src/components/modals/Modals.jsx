@@ -232,7 +232,7 @@ export function DeviceSyncModal() {
         <div className="sync-action-bar">
           <div className="sync-status-msg">{syncing ? `Syncing: ${progress}%` : 'Ready to synchronize.'}</div>
           <div className="sync-action-buttons">
-            <button className="xp-button primary" onClick={startSync} disabled={syncing}>Sync Now</button>
+            <button className="xp-button primary" onClick={(e) => { if (syncing) { window.playErrorSound?.(); } else { startSync(); } }} disabled={syncing}>Sync Now</button>
             <button className="xp-button" onClick={() => closeModal('deviceSync')}>Close</button>
           </div>
         </div>

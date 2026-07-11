@@ -184,6 +184,7 @@ function GuestbookModal() {
                   type="submit"
                   className="xp-button primary"
                   disabled={!name.trim() || !message.trim()}
+                  onClick={(e) => { if (!name.trim() || !message.trim()) { e.preventDefault(); window.playErrorSound?.(); } }}
                 >
                   Sign Guestbook!
                 </button>

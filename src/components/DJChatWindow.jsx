@@ -296,7 +296,7 @@ ${localLibraryCatalog}`;
                     fontSize: '11px'
                   }}
                 />
-                <button type="submit" className="xp-button primary" disabled={isTyping || !inputValue.trim()}>
+                <button type="submit" className="xp-button primary" disabled={isTyping || !inputValue.trim()} onClick={(e) => { if (isTyping || !inputValue.trim()) { e.preventDefault(); window.playErrorSound?.(); } }}>
                   Send
                 </button>
               </div>

@@ -233,7 +233,7 @@ Please pick the next song that flows best! Return ONLY valid JSON like this:
           <button className="player-btn" onClick={() => prevNext(-1)} title="Previous"><span>&#9664;&#9664;</span></button>
           <button className="player-btn primary" onClick={togglePlayback} title="Play/Pause"><span ref={playIconRef}>{isPlaying ? '❚❚' : '▶'}</span></button>
           <button className="player-btn" onClick={stopTrack} title="Stop"><span>&#9632;</span></button>
-          <button className="player-btn" onClick={() => prevNext(1)} title="Next" disabled={aiLoading}>
+          <button className="player-btn" onClick={(e) => { if (aiLoading) { window.playErrorSound?.(); } else { prevNext(1); } }} title="Next" disabled={aiLoading}>
             {aiLoading ? '...' : '▶▶'}
           </button>
         </div>
