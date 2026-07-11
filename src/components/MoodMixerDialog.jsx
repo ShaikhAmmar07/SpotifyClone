@@ -47,23 +47,38 @@ const MoodMixerDialog = () => {
 
   const mockFallbackPlaylists = {
     sad: [1, 3, 7, 5],
-    happy: [2, 4, 8, 10],
+    happy: [2, 4, 8, 10, 58],
     party: [2, 4, 8, 10, 1],
-    study: [3, 1, 7],
-    workout: [2, 8, 10]
+    study: [3, 1, 7, 53],
+    workout: [2, 8, 10],
+    emotional: [3, 7, 51, 54, 56],
+    romantic: [3, 52, 57, 59, 62],
+    nostalgic: [10, 55, 60],
+    calm: [3, 53, 57],
+    melancholic: [3, 7, 61]
   };
 
   const getFallbackPlaylist = (moodDesc) => {
     const lowerMood = moodDesc.toLowerCase();
-    const selectedIds = lowerMood.includes('sad') || lowerMood.includes('rainy')
+    const selectedIds = lowerMood.includes('sad') || lowerMood.includes('rainy') || lowerMood.includes('emotional') || lowerMood.includes('melancholic') || lowerMood.includes('heartbreak')
       ? mockFallbackPlaylists.sad
-      : lowerMood.includes('happy') || lowerMood.includes('dance')
+      : lowerMood.includes('happy') || lowerMood.includes('dance') || lowerMood.includes('joy')
         ? mockFallbackPlaylists.happy
-        : lowerMood.includes('party') || lowerMood.includes('rock')
+        : lowerMood.includes('party') || lowerMood.includes('rock') || lowerMood.includes('energetic')
           ? mockFallbackPlaylists.party
-          : lowerMood.includes('study') || lowerMood.includes('chill')
+          : lowerMood.includes('study') || lowerMood.includes('focus') || lowerMood.includes('concentrate')
             ? mockFallbackPlaylists.study
-            : mockFallbackPlaylists.workout;
+            : lowerMood.includes('workout') || lowerMood.includes('gym') || lowerMood.includes('exercise') || lowerMood.includes('run')
+              ? mockFallbackPlaylists.workout
+              : lowerMood.includes('romantic') || lowerMood.includes('love') || lowerMood.includes('date')
+                ? mockFallbackPlaylists.romantic
+                : lowerMood.includes('nostalgic') || lowerMood.includes('memory') || lowerMood.includes('old') || lowerMood.includes('throwback')
+                  ? mockFallbackPlaylists.nostalgic
+                  : lowerMood.includes('calm') || lowerMood.includes('relax') || lowerMood.includes('peace') || lowerMood.includes('chill')
+                    ? mockFallbackPlaylists.calm
+                    : lowerMood.includes('emotional') || lowerMood.includes('feeling')
+                      ? mockFallbackPlaylists.emotional
+                      : mockFallbackPlaylists.workout;
 
     return sanitizePlaylistSongs(selectedIds.map((id) => songs.find((song) => song.id === id)).filter(Boolean).map((song) => ({
       ...song,
