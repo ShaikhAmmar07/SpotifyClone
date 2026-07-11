@@ -3,7 +3,7 @@ import useStore from '../store/useStore';
 
 export default function LoginScreen() {
   const login = useStore(s => s.login);
-  const [email, setEmail] = useState('nikhil@retrospotify.com');
+  const [email, setEmail] = useState('rivalry@retrospotify.com');
   const [password, setPassword] = useState('password123');
   const [connection, setConnection] = useState('dsl');
 
