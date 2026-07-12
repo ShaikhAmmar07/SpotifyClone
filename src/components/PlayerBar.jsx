@@ -3,6 +3,7 @@ import useStore from '../store/useStore';
 import { initAudio, resumeAudioContext } from '../audio/audioEngine';
 import { songs } from '../data/songs';
 import { GoogleGenAI } from '@google/genai';
+import { getMoodCompatibleSongs } from '../utils/moodMapper';
 
 export default function PlayerBar({ audioRef }) {
   const { 
@@ -28,25 +29,27 @@ export default function PlayerBar({ audioRef }) {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     console.log('API Key loaded:', !!apiKey);
     if (!apiKey || !currentSong) {
-      // Fallback to random
-      const available = songs.filter(s => !lastPlayed.some(p => p.id === s.id));
-      const fallback = available.length > 0 
-        ? available[Math.floor(Math.random() * available.length)] 
+      // Smart fallback: pick from same mood/genre
+      const compatible = getMoodCompatibleSongs(currentSong, songs, lastPlayed.map(p => p.id));
+      const fallback = compatible.length > 0
+        ? compatible[Math.floor(Math.random() * compatible.length)]
         : songs[Math.floor(Math.random() * songs.length)];
-      return { nextSong: fallback, reason: "Random bop for you!" };
+      return { nextSong: fallback, reason: "Matches your vibe perfectly!" };
     }
 
     try {
       const client = new GoogleGenAI({ apiKey });
       
       const prompt = `
-Current song: ${currentSong.title} by ${currentSong.artist}
-Last played: ${lastPlayed.map(s => s.title + " by " + s.artist).join(", ")}
-All available songs (id, title, artist, album):
-${songs.map(s => `${s.id}: ${s.title} by ${s.artist} from ${s.album}`).join("\n")}
+Current song: "${currentSong.title}" by ${currentSong.artist}
+Genre: ${currentSong.genre}
+Mood: ${currentSong.mood}
 
-Please pick the next song that flows best! Return ONLY valid JSON like this:
-{"nextSongId": song_id, "reason": "one sentence why this fits"}
+Library (id, title, artist, genre, mood):
+${songs.map(s => `${s.id}: ${s.title} by ${s.artist} (Genre: ${s.genre}, Mood: ${s.mood})`).join("\n")}
+
+Pick the NEXT song that flows best from the current song. Prefer similar mood or complementary genre.
+Return ONLY valid JSON: {"nextSongId": song_id, "reason": "one sentence why this fits"}
 `;
 
       console.log('Sending to Gemini:', prompt);
@@ -66,16 +69,25 @@ Please pick the next song that flows best! Return ONLY valid JSON like this:
       }
       const parsed = JSON.parse(jsonStr);
       
-      const nextSong = songs.find(s => s.id === parsed.nextSongId) || songs[0];
-      return { nextSong, reason: parsed.reason };
+      const nextSong = songs.find(s => s.id === parsed.nextSongId);
+      // Verify it's mood-compatible
+      if (nextSong && (nextSong.mood === currentSong.mood || nextSong.genre === currentSong.genre)) {
+        return { nextSong, reason: parsed.reason };
+      }
+      // If AI picked incompatible song, use smart fallback
+      const compatible = getMoodCompatibleSongs(currentSong, songs, lastPlayed.map(p => p.id));
+      const fallback = compatible.length > 0
+        ? compatible[Math.floor(Math.random() * compatible.length)]
+        : songs[0];
+      return { nextSong: fallback, reason: "Flows perfectly from your current track!" };
     } catch (e) {
       console.error("AI error", e);
-      // Fallback
-      const available = songs.filter(s => !lastPlayed.some(p => p.id === s.id));
-      const fallback = available.length > 0 
-        ? available[Math.floor(Math.random() * available.length)] 
+      // Smart fallback: same mood/genre
+      const compatible = getMoodCompatibleSongs(currentSong, songs, lastPlayed.map(p => p.id));
+      const fallback = compatible.length > 0
+        ? compatible[Math.floor(Math.random() * compatible.length)]
         : songs[Math.floor(Math.random() * songs.length)];
-      return { nextSong: fallback, reason: "Random bop for you!" };
+      return { nextSong: fallback, reason: "Matches your vibe perfectly!" };
     }
   }, [currentSong, lastPlayed]);
 

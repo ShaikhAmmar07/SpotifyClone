@@ -2,10 +2,11 @@ import { useState } from 'react';
 import useStore from '../store/useStore';
 import { songs } from '../data/songs';
 import { GoogleGenAI } from '@google/genai';
+import { mapUserMoodToDbMoods, findMatchingSong } from '../utils/moodMapper';
 
 const MoodMixerDialog = () => {
   const { openModals, closeModal, createPlaylist, setCurrentSong, setIsPlaying } = useStore();
-  const [step, setStep] = useState(1); // 1: input, 2: loading, 3: results
+  const [step, setStep] = useState(1);
   const [mood, setMood] = useState('');
   const [progress, setProgress] = useState(0);
   const [generatedSongs, setGeneratedSongs] = useState([]);
@@ -15,83 +16,11 @@ const MoodMixerDialog = () => {
     return `${song.id}. ${song.title} by ${song.artist} | ${song.genre} | ${song.mood} | ${song.year} | ${song.duration}`;
   }).join('\n');
 
-  const sanitizePlaylistSongs = (candidateSongs) => {
-    return candidateSongs
-      .map((song) => {
-        if (!song || song.id == null) return null;
-        const dbSong = songs.find((librarySong) => librarySong.id === song.id);
-        return dbSong ? { ...dbSong, reason: song.reason || 'Perfect for your vibe!' } : null;
-      })
-      .filter(Boolean);
-  };
-
-  const getLocalFallbackSongIds = (moodDesc) => {
-    const lowerMood = moodDesc.toLowerCase();
-    const preferred = songs.filter((song) => {
-      return (
-        lowerMood.includes(song.mood) ||
-        lowerMood.includes(song.genre.toLowerCase()) ||
-        (lowerMood.includes('2006') && song.year === 2006)
-      );
-    });
-
-    if (preferred.length > 0) {
-      return preferred.map((song) => song.id);
-    }
-
-    return songs
-      .filter((song) => song.year === 2006)
-      .slice(0, 5)
-      .map((song) => song.id);
-  };
-
-  const mockFallbackPlaylists = {
-    sad: [1, 3, 7, 5],
-    happy: [2, 4, 8, 10, 58],
-    party: [2, 4, 8, 10, 1],
-    study: [3, 1, 7, 53],
-    workout: [2, 8, 10],
-    emotional: [3, 7, 51, 54, 56],
-    romantic: [3, 52, 57, 59, 62],
-    nostalgic: [10, 55, 60],
-    calm: [3, 53, 57],
-    melancholic: [3, 7, 61]
-  };
-
-  const getFallbackPlaylist = (moodDesc) => {
-    const lowerMood = moodDesc.toLowerCase();
-    const selectedIds = lowerMood.includes('sad') || lowerMood.includes('rainy') || lowerMood.includes('emotional') || lowerMood.includes('melancholic') || lowerMood.includes('heartbreak')
-      ? mockFallbackPlaylists.sad
-      : lowerMood.includes('happy') || lowerMood.includes('dance') || lowerMood.includes('joy')
-        ? mockFallbackPlaylists.happy
-        : lowerMood.includes('party') || lowerMood.includes('rock') || lowerMood.includes('energetic')
-          ? mockFallbackPlaylists.party
-          : lowerMood.includes('study') || lowerMood.includes('focus') || lowerMood.includes('concentrate')
-            ? mockFallbackPlaylists.study
-            : lowerMood.includes('workout') || lowerMood.includes('gym') || lowerMood.includes('exercise') || lowerMood.includes('run')
-              ? mockFallbackPlaylists.workout
-              : lowerMood.includes('romantic') || lowerMood.includes('love') || lowerMood.includes('date')
-                ? mockFallbackPlaylists.romantic
-                : lowerMood.includes('nostalgic') || lowerMood.includes('memory') || lowerMood.includes('old') || lowerMood.includes('throwback')
-                  ? mockFallbackPlaylists.nostalgic
-                  : lowerMood.includes('calm') || lowerMood.includes('relax') || lowerMood.includes('peace') || lowerMood.includes('chill')
-                    ? mockFallbackPlaylists.calm
-                    : lowerMood.includes('emotional') || lowerMood.includes('feeling')
-                      ? mockFallbackPlaylists.emotional
-                      : mockFallbackPlaylists.workout;
-
-    return sanitizePlaylistSongs(selectedIds.map((id) => songs.find((song) => song.id === id)).filter(Boolean).map((song) => ({
-      ...song,
-      reason: 'Perfect for your vibe!'
-    })));
-  };
-
   const generatePlaylist = async () => {
     if (!mood.trim()) return;
     setStep(2);
     setProgress(0);
 
-    // Simulate progress
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
@@ -103,7 +32,7 @@ const MoodMixerDialog = () => {
     }, 500);
 
     try {
-      let selectedSongs = [];
+      let validSongs = [];
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
       if (apiKey) {
@@ -136,45 +65,72 @@ Please select 10 songs that match the mood. Return ONLY valid JSON with NO extra
             contents: [{ role: 'user', parts: [{ text: prompt }] }]
           });
           const responseText = result.text ?? '';
-          
-          // Try to extract JSON
-          let jsonStr = responseText;
-          const jsonStart = jsonStr.indexOf('{');
-          const jsonEnd = jsonStr.lastIndexOf('}');
-          if (jsonStart !== -1 && jsonEnd !== -1) {
-            jsonStr = jsonStr.slice(jsonStart, jsonEnd + 1);
+
+          // 1. Get target moods based on user input
+          const targetMoods = mapUserMoodToDbMoods(mood);
+
+          // 2. Parse AI response
+          let aiSongs = [];
+          try {
+            const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+            const jsonStr = jsonMatch ? jsonMatch[0] : responseText;
+            const parsed = JSON.parse(jsonStr);
+            aiSongs = parsed.songs || [];
+          } catch (e) {
+            console.error('JSON parse error:', e);
+            aiSongs = [];
           }
-          const parsed = JSON.parse(jsonStr);
-          selectedSongs = sanitizePlaylistSongs(parsed.songs || []);
+
+          // 3. STRICT FILTER: Only keep songs that exist in our DB AND match target moods
+          validSongs = aiSongs
+            .map(aiSong => findMatchingSong(aiSong, songs))
+            .filter(dbSong => dbSong && targetMoods.includes(dbSong.mood));
+
+          // 4. If AI failed to find enough valid songs, fill from local DB using target moods
+          if (validSongs.length < 10) {
+            const fallbackSongs = songs
+              .filter(s => targetMoods.includes(s.mood) && !validSongs.find(v => v.id === s.id))
+              .sort(() => 0.5 - Math.random())
+              .slice(0, 10 - validSongs.length);
+            validSongs.push(...fallbackSongs);
+          }
         } catch (e) {
-          console.error('AI error', e);
-          selectedSongs = getFallbackPlaylist(mood);
+          console.error('AI error:', e);
+          validSongs = getFallbackByMoods(mapUserMoodToDbMoods(mood));
         }
       } else {
-        selectedSongs = getFallbackPlaylist(mood);
+        validSongs = getFallbackByMoods(mapUserMoodToDbMoods(mood));
       }
 
-      // Ensure all songs are from our database
-      selectedSongs = sanitizePlaylistSongs(selectedSongs);
-
-      if (selectedSongs.length === 0) {
-        const fallbackIds = getLocalFallbackSongIds(mood);
-        selectedSongs = sanitizePlaylistSongs(fallbackIds.map((id) => songs.find((song) => song.id === id)).filter(Boolean).map((song) => ({
-          ...song,
-          reason: 'Perfect for your vibe!'
-        })));
+      // Ensure we have songs
+      if (validSongs.length === 0) {
+        validSongs = getFallbackByMoods(['happy', 'energetic', 'chill', 'calm', 'romantic']);
       }
 
-      setGeneratedSongs(selectedSongs);
+      // Format for UI
+      const formattedSongs = validSongs.map((song, idx) => ({
+        ...song,
+        reason: song.reason || 'Perfect for your vibe!'
+      }));
+
+      setGeneratedSongs(formattedSongs);
       clearInterval(interval);
       setProgress(100);
       setTimeout(() => setStep(3), 500);
     } catch (e) {
-      console.error('Error', e);
+      console.error('Error:', e);
       clearInterval(interval);
-      setGeneratedSongs(getFallbackPlaylist(mood));
+      setGeneratedSongs(getFallbackByMoods(['happy', 'energetic', 'chill', 'calm', 'romantic']));
       setStep(3);
     }
+  };
+
+  const getFallbackByMoods = (targetMoods) => {
+    return songs
+      .filter(s => targetMoods.includes(s.mood))
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 10)
+      .map(song => ({ ...song, reason: 'Perfect for your vibe!' }));
   };
 
   const savePlaylist = () => {
